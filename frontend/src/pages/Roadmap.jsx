@@ -188,7 +188,7 @@ const Roadmap = () => {
                 <div className="flex justify-between pt-4 border-t border-gray-150 dark:border-gray-800">
                   <Button
                     variant="outline"
-                    onClick={() => setActiveStep((prev) => Math.max(0, prev - 1))}
+                    onClick={() => setActiveStep(activeStep - 1)}
                     disabled={activeStep === 0}
                     className="px-3.5 py-1.5 text-xs"
                   >
@@ -197,7 +197,7 @@ const Roadmap = () => {
 
                   {activeStep < roadmap.roadmapData.length - 1 ? (
                     <Button
-                      onClick={() => setActiveStep((prev) => Math.min(roadmap.roadmapData.length - 1, prev + 1))}
+                      onClick={() => setActiveStep(activeStep + 1)}
                       className="px-3.5 py-1.5 text-xs"
                     >
                       Next Month
