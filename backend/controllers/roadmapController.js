@@ -62,16 +62,16 @@ const toggleRoadmapMonth = async (req, res, next) => {
     const { id } = req.params;
     const { monthIndex } = req.body;
 
-    if (monthIndex === undefined || monthIndex < 0 || monthIndex > 5) {
-      return errorResponse(res, 'Valid month index (0-5) is required', 400);
-    }
-
     const roadmap = await Roadmap.findOne({
       where: { id, userId: req.user.id },
     });
 
     if (!roadmap) {
       return errorResponse(res, 'Roadmap not found', 404);
+    }
+
+    if (monthIndex === undefined || monthIndex < 0 || monthIndex >= (roadmap.roadmapData || []).length) {
+      return errorResponse(res, 'Valid month index is required', 400);
     }
 
     // Toggle the completed status

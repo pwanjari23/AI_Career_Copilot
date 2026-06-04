@@ -144,71 +144,77 @@ const Roadmap = () => {
 
           {/* Details Content Column */}
           <div className="lg:col-span-2 space-y-4">
-            <Card className="p-6 space-y-4 relative overflow-hidden text-left">
-              {/* background watermark */}
-              <div className="absolute -bottom-6 -right-6 text-primary-500/5 select-none font-bold text-8xl">
-                0{activeStep + 1}
-              </div>
+            {roadmap.roadmapData && roadmap.roadmapData.length > 0 ? (
+              <Card className="p-6 space-y-4 relative overflow-hidden text-left">
+                {/* background watermark */}
+                <div className="absolute -bottom-6 -right-6 text-primary-500/5 select-none font-bold text-8xl">
+                  0{activeStep + 1}
+                </div>
 
-              <div className="flex justify-between items-center">
-                <span className="text-[10px] font-bold text-primary-500 uppercase tracking-widest">
-                  Target: {roadmap.targetRole}
-                </span>
-                <span className="px-2.5 py-0.5 bg-emerald-500/10 text-emerald-500 border border-emerald-500/10 text-xs font-semibold rounded-full">
-                  {roadmap.roadmapData[activeStep].month}
-                </span>
-              </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-[10px] font-bold text-primary-500 uppercase tracking-widest">
+                    Target: {roadmap.targetRole}
+                  </span>
+                  <span className="px-2.5 py-0.5 bg-emerald-500/10 text-emerald-500 border border-emerald-500/10 text-xs font-semibold rounded-full">
+                    {roadmap.roadmapData[activeStep]?.month || `Month ${activeStep + 1}`}
+                  </span>
+                </div>
 
-              <h3 className="text-xl font-bold font-sans">
-                {roadmap.roadmapData[activeStep].topic}
-              </h3>
+                <h3 className="text-xl font-bold font-sans">
+                  {roadmap.roadmapData[activeStep]?.topic || 'No topic'}
+                </h3>
 
-              <p className="text-gray-600 dark:text-gray-300 font-light leading-relaxed text-xs whitespace-pre-line border-t border-gray-150 dark:border-gray-800 pt-3">
-                {roadmap.roadmapData[activeStep].details}
-              </p>
+                <p className="text-gray-600 dark:text-gray-300 font-light leading-relaxed text-xs whitespace-pre-line border-t border-gray-150 dark:border-gray-800 pt-3">
+                  {roadmap.roadmapData[activeStep]?.details || 'No details available'}
+                </p>
 
-              {/* Month Tracker Toggle */}
-              <div className="flex items-center space-x-3 p-3 bg-gray-50/50 dark:bg-gray-900/40 rounded-xl border border-gray-250/20 dark:border-gray-850/20">
-                <input
-                  type="checkbox"
-                  id={`complete-month-${activeStep}`}
-                  checked={!!roadmap.roadmapData[activeStep].completed}
-                  onChange={() => handleToggleMonth(activeStep)}
-                  className="h-4.5 w-4.5 rounded border-gray-300 text-primary-500 focus:ring-primary-500 cursor-pointer"
-                />
-                <label
-                  htmlFor={`complete-month-${activeStep}`}
-                  className="text-xs font-semibold text-gray-700 dark:text-gray-300 cursor-pointer select-none"
-                >
-                  Mark Month {activeStep + 1} as Completed
-                </label>
-              </div>
+                {/* Month Tracker Toggle */}
+                <div className="flex items-center space-x-3 p-3 bg-gray-50/50 dark:bg-gray-900/40 rounded-xl border border-gray-250/20 dark:border-gray-850/20">
+                  <input
+                    type="checkbox"
+                    id={`complete-month-${activeStep}`}
+                    checked={!!roadmap.roadmapData[activeStep]?.completed}
+                    onChange={() => handleToggleMonth(activeStep)}
+                    className="h-4.5 w-4.5 rounded border-gray-300 text-primary-500 focus:ring-primary-500 cursor-pointer"
+                  />
+                  <label
+                    htmlFor={`complete-month-${activeStep}`}
+                    className="text-xs font-semibold text-gray-700 dark:text-gray-300 cursor-pointer select-none"
+                  >
+                    Mark Month {activeStep + 1} as Completed
+                  </label>
+                </div>
 
-              <div className="flex justify-between pt-4 border-t border-gray-150 dark:border-gray-800">
-                <Button
-                  variant="outline"
-                  onClick={() => setActiveStep((prev) => Math.max(0, prev - 1))}
-                  disabled={activeStep === 0}
-                  className="px-3.5 py-1.5 text-xs"
-                >
-                  Previous
-                </Button>
-
-                {activeStep < 5 ? (
+                <div className="flex justify-between pt-4 border-t border-gray-150 dark:border-gray-800">
                   <Button
-                    onClick={() => setActiveStep((prev) => Math.min(5, prev + 1))}
+                    variant="outline"
+                    onClick={() => setActiveStep((prev) => Math.max(0, prev - 1))}
+                    disabled={activeStep === 0}
                     className="px-3.5 py-1.5 text-xs"
                   >
-                    Next Month
+                    Previous
                   </Button>
-                ) : (
-                  <div className="flex items-center space-x-1.5 text-emerald-500 font-bold text-xs">
-                    <CheckCircle2 className="h-4.5 w-4.5" />
-                    <span>Roadmap Finished!</span>
-                  </div>
-                )}
-              </div>
-            </Card>
+
+                  {activeStep < roadmap.roadmapData.length - 1 ? (
+                    <Button
+                      onClick={() => setActiveStep((prev) => Math.min(roadmap.roadmapData.length - 1, prev + 1))}
+                      className="px-3.5 py-1.5 text-xs"
+                    >
+                      Next Month
+                    </Button>
+                  ) : (
+                    <div className="flex items-center space-x-1.5 text-emerald-500 font-bold text-xs">
+                      <CheckCircle2 className="h-4.5 w-4.5" />
+                      <span>Roadmap Finished!</span>
+                    </div>
+                  )}
+                </div>
+              </Card>
+            ) : (
+              <Card className="p-6 text-center text-gray-500 text-xs">
+                No roadmap steps found. Please try generating a new roadmap.
+              </Card>
+            )}
           </div>
         </div>
       )}
