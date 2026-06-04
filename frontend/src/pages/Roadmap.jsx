@@ -1,0 +1,219 @@
+import React, { useState, useEffect } from 'react';
+import api from '../services/api';
+import Card from '../components/Card';
+import Button from '../components/Button';
+import { Compass, CheckCircle2, ChevronRight, AlertCircle, Calendar } from 'lucide-react';
+
+const Roadmap = () => {
+  const [targetRole, setTargetRole] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [roadmap, setRoadmap] = useState(null);
+  const [error, setError] = useState(null);
+  const [activeStep, setActiveStep] = useState(0);
+
+  // Fetch latest roadmap on mount
+  useEffect(() => {
+    const fetchLatest = async () => {
+      try {
+        const res = await api.get('/roadmaps/latest');
+        if (res.data.data) {
+          setRoadmap(res.data.data);
+        }
+      } catch (err) {
+        console.error('Failed to load latest roadmap:', err.message);
+      }
+    };
+    fetchLatest();
+  }, []);
+
+  const handleGenerate = async () => {
+    if (!targetRole.trim()) return;
+
+    setLoading(true);
+    setError(null);
+    setRoadmap(null);
+
+    try {
+      const res = await api.post('/roadmaps', { targetRole });
+      setRoadmap(res.data.data);
+      setActiveStep(0);
+    } catch (err) {
+      setError(
+        err.response?.data?.message || 'Failed to generate roadmap. Try running a Skill Gap analysis first for this role!'
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleToggleMonth = async (index) => {
+    if (!roadmap) return;
+    try {
+      const res = await api.put(`/roadmaps/${roadmap.id}/toggle-month`, { monthIndex: index });
+      setRoadmap(res.data.data);
+    } catch (err) {
+      console.error('Failed to toggle month status:', err.message);
+    }
+  };
+
+  return (
+    <div className="space-y-5 text-left max-w-4xl mx-auto">
+      <div>
+        <h2 className="text-xl font-bold font-sans">Study Roadmap</h2>
+        <p className="text-gray-500 dark:text-gray-400 text-xs mt-0.5">
+          Personalized 6-month progression tracker. Check off milestones as you master them.
+        </p>
+      </div>
+
+      {!roadmap ? (
+        <Card className="max-w-md mx-auto p-5 space-y-4">
+          <h3 className="text-md font-bold flex items-center space-x-2">
+            <Compass className="h-5 w-5 text-primary-500" />
+            <span>Generate Study Plan</span>
+          </h3>
+          <div>
+            <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1.5">
+              Target Position
+            </label>
+            <input
+              type="text"
+              required
+              value={targetRole}
+              onChange={(e) => setTargetRole(e.target.value)}
+              className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/60 focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm"
+              placeholder="e.g. Node.js Engineer"
+            />
+          </div>
+
+          {error && (
+            <div className="p-3 text-xs bg-red-50 dark:bg-red-950/20 text-red-500 rounded-xl flex items-center space-x-2">
+              <AlertCircle className="h-4 w-4 flex-shrink-0" />
+              <span>{error}</span>
+            </div>
+          )}
+
+          <Button
+            onClick={handleGenerate}
+            disabled={!targetRole.trim()}
+            loading={loading}
+            className="w-full py-2.5"
+          >
+            <span>Create 6-Month Roadmap</span>
+            <ChevronRight className="h-4 w-4 ml-1.5" />
+          </Button>
+        </Card>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start animate-fade-in">
+          {/* Timeline Navigation Column */}
+          <Card className="lg:col-span-1 p-4 space-y-3">
+            <div className="flex justify-between items-center pb-2.5 border-b border-gray-150 dark:border-gray-800">
+              <h3 className="font-bold text-xs text-gray-400 uppercase tracking-widest">Milestones</h3>
+              <button
+                onClick={() => setRoadmap(null)}
+                className="text-xs font-bold text-primary-500 hover:underline"
+              >
+                Reset
+              </button>
+            </div>
+            
+            <div className="space-y-1.5">
+              {(roadmap.roadmapData || []).map((step, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setActiveStep(idx)}
+                  className={`w-full flex items-center space-x-3 p-3 rounded-xl font-semibold text-xs transition-all text-left ${
+                    activeStep === idx
+                      ? 'bg-primary-500 text-white shadow-sm shadow-primary-500/10'
+                      : 'hover:bg-gray-100 dark:hover:bg-gray-800/60 text-gray-600 dark:text-gray-400'
+                  }`}
+                >
+                  <Calendar className="h-4 w-4 flex-shrink-0" />
+                  <div className="truncate flex-1">
+                    <span className="block text-[9px] uppercase font-bold tracking-wider opacity-85">{step.month}</span>
+                    <span className="truncate block font-semibold">{step.topic}</span>
+                  </div>
+                  {step.completed && (
+                    <span className="h-4.5 w-4.5 bg-emerald-500 text-white rounded-full flex items-center justify-center flex-shrink-0">
+                      ✓
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
+          </Card>
+
+          {/* Details Content Column */}
+          <div className="lg:col-span-2 space-y-4">
+            <Card className="p-6 space-y-4 relative overflow-hidden text-left">
+              {/* background watermark */}
+              <div className="absolute -bottom-6 -right-6 text-primary-500/5 select-none font-bold text-8xl">
+                0{activeStep + 1}
+              </div>
+
+              <div className="flex justify-between items-center">
+                <span className="text-[10px] font-bold text-primary-500 uppercase tracking-widest">
+                  Target: {roadmap.targetRole}
+                </span>
+                <span className="px-2.5 py-0.5 bg-emerald-500/10 text-emerald-500 border border-emerald-500/10 text-xs font-semibold rounded-full">
+                  {roadmap.roadmapData[activeStep].month}
+                </span>
+              </div>
+
+              <h3 className="text-xl font-bold font-sans">
+                {roadmap.roadmapData[activeStep].topic}
+              </h3>
+
+              <p className="text-gray-600 dark:text-gray-300 font-light leading-relaxed text-xs whitespace-pre-line border-t border-gray-150 dark:border-gray-800 pt-3">
+                {roadmap.roadmapData[activeStep].details}
+              </p>
+
+              {/* Month Tracker Toggle */}
+              <div className="flex items-center space-x-3 p-3 bg-gray-50/50 dark:bg-gray-900/40 rounded-xl border border-gray-250/20 dark:border-gray-850/20">
+                <input
+                  type="checkbox"
+                  id={`complete-month-${activeStep}`}
+                  checked={!!roadmap.roadmapData[activeStep].completed}
+                  onChange={() => handleToggleMonth(activeStep)}
+                  className="h-4.5 w-4.5 rounded border-gray-300 text-primary-500 focus:ring-primary-500 cursor-pointer"
+                />
+                <label
+                  htmlFor={`complete-month-${activeStep}`}
+                  className="text-xs font-semibold text-gray-700 dark:text-gray-300 cursor-pointer select-none"
+                >
+                  Mark Month {activeStep + 1} as Completed
+                </label>
+              </div>
+
+              <div className="flex justify-between pt-4 border-t border-gray-150 dark:border-gray-800">
+                <Button
+                  variant="outline"
+                  onClick={() => setActiveStep((prev) => Math.max(0, prev - 1))}
+                  disabled={activeStep === 0}
+                  className="px-3.5 py-1.5 text-xs"
+                >
+                  Previous
+                </Button>
+
+                {activeStep < 5 ? (
+                  <Button
+                    onClick={() => setActiveStep((prev) => Math.min(5, prev + 1))}
+                    className="px-3.5 py-1.5 text-xs"
+                  >
+                    Next Month
+                  </Button>
+                ) : (
+                  <div className="flex items-center space-x-1.5 text-emerald-500 font-bold text-xs">
+                    <CheckCircle2 className="h-4.5 w-4.5" />
+                    <span>Roadmap Finished!</span>
+                  </div>
+                )}
+              </div>
+            </Card>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default Roadmap;
