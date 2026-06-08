@@ -78,6 +78,17 @@ const submitAnswer = async (req, res, next) => {
       return errorResponse(res, 'Answer ID and non-empty answer are required', 400);
     }
 
+    // Heuristic validation for meaningful/valid answers
+    const trimmedAnswer = answer.trim();
+    const hasLetter = /[a-zA-Z]/.test(trimmedAnswer);
+    const firstChar = trimmedAnswer[0];
+    const isAllSameChar = trimmedAnswer.split('').every(c => c === firstChar);
+    const isSingleLongWordGibberish = trimmedAnswer.indexOf(' ') === -1 && trimmedAnswer.length > 15;
+
+    if (trimmedAnswer.length < 5 || !hasLetter || isAllSameChar || isSingleLongWordGibberish) {
+      return errorResponse(res, 'Please enter a valid, meaningful answer (avoid gibberish or extremely short inputs).', 400);
+    }
+
     // 1. Verify that the interview and question exist and belong to the user
     const interview = await Interview.findOne({
       where: { id: interviewId, userId: req.user.id },

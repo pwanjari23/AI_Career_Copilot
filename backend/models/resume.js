@@ -39,6 +39,14 @@ const Resume = sequelize.define('Resume', {
     type: DataTypes.JSON,
     allowNull: true,
   },
+  missingSkills: {
+    type: DataTypes.JSON,
+    allowNull: true,
+  },
+  suggestions: {
+    type: DataTypes.JSON,
+    allowNull: true,
+  },
 }, {
   tableName: 'resumes',
   timestamps: true,

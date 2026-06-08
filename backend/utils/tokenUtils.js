@@ -34,9 +34,30 @@ const verifyRefreshToken = (token) => {
   return jwt.verify(token, REFRESH_SECRET);
 };
 
+const generateResetToken = (email) => {
+  return jwt.sign(
+    {
+      email,
+      purpose: 'reset-password'
+    },
+    ACCESS_SECRET,
+    { expiresIn: '15m' }
+  );
+};
+
+const verifyResetToken = (token) => {
+  const decoded = jwt.verify(token, ACCESS_SECRET);
+  if (decoded.purpose !== 'reset-password') {
+    throw new Error('Invalid token purpose');
+  }
+  return decoded;
+};
+
 module.exports = {
   generateAccessToken,
   generateRefreshToken,
   verifyAccessToken,
   verifyRefreshToken,
+  generateResetToken,
+  verifyResetToken,
 };

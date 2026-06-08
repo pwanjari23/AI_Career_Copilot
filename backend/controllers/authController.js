@@ -1,7 +1,15 @@
 const bcrypt = require('bcryptjs');
 const User = require('../models/user');
 const { successResponse, errorResponse } = require('../utils/apiResponse');
-const { generateAccessToken, generateRefreshToken, verifyRefreshToken } = require('../utils/tokenUtils');
+const { 
+  generateAccessToken, 
+  generateRefreshToken, 
+  verifyRefreshToken,
+  generateResetToken,
+  verifyResetToken
+} = require('../utils/tokenUtils');
+const { sendWelcomeEmail, sendResetPasswordEmail } = require('../services/emailService');
+const { OAuth2Client } = require('google-auth-library');
 
 /**
  * Register a new user
@@ -34,6 +42,9 @@ const register = async (req, res, next) => {
     // Save refresh token to database
     user.refreshToken = refreshToken;
     await user.save();
+
+    // Send welcome email asynchronously
+    sendWelcomeEmail(user.email, user.fullName);
 
     // Store refresh token in HttpOnly cookie
     res.cookie('refreshToken', refreshToken, {
@@ -198,9 +209,6 @@ const logout = async (req, res, next) => {
   }
 };
 
-/**
- * Handle password recovery (Forgot Password)
- */
 const forgotPassword = async (req, res, next) => {
   try {
     const { email } = req.body;
@@ -210,33 +218,46 @@ const forgotPassword = async (req, res, next) => {
       return errorResponse(res, 'No account found with this email address', 404);
     }
 
-    // Simulated flow: in production, send an email. For demo purposes, we log it and return success
-    console.log(`Password reset requested for email: ${email}`);
+    // Generate password reset token valid for 15 minutes
+    const token = generateResetToken(user.email);
     
-    return successResponse(res, 'Password reset instructions have been logged. You may now reset your password.');
+    // Build reset password link pointing to the React frontend route
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const resetLink = `${frontendUrl}/reset-password?token=${encodeURIComponent(token)}`;
+
+    // Send the email containing the link
+    await sendResetPasswordEmail(user.email, user.fullName, resetLink);
+
+    return successResponse(res, 'A password reset link has been sent to your email address.');
   } catch (error) {
     next(error);
   }
 };
 
-/**
- * Reset password
- */
 const resetPassword = async (req, res, next) => {
   try {
-    const { email, password } = req.body;
+    const { token, password } = req.body;
 
-    const user = await User.findOne({ where: { email } });
-    if (!user) {
-      return errorResponse(res, 'User not found', 404);
+    // Verify reset token validity and expiration
+    let decoded;
+    try {
+      decoded = verifyResetToken(token);
+    } catch (err) {
+      return errorResponse(res, 'The reset link is invalid or has expired. Please try again.', 400);
     }
 
-    // Hash and update password
+    // Find the user mapped to the verified email
+    const user = await User.findOne({ where: { email: decoded.email } });
+    if (!user) {
+      return errorResponse(res, 'User no longer exists', 404);
+    }
+
+    // Hash the new password and update user record
     user.password = await bcrypt.hash(password, 10);
-    user.refreshToken = null; // force relogin
+    user.refreshToken = null; // force full re-login
     await user.save();
 
-    return successResponse(res, 'Password has been reset successfully. Please login.');
+    return successResponse(res, 'Your password has been reset successfully. You may now sign in.');
   } catch (error) {
     next(error);
   }
@@ -298,6 +319,136 @@ const updateProfile = async (req, res, next) => {
   }
 };
 
+/**
+ * Change authenticated user's password
+ */
+const changePassword = async (req, res, next) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+
+    const user = await User.findByPk(req.user.id);
+    if (!user) {
+      return errorResponse(res, 'User not found', 404);
+    }
+
+    // Verify current password
+    const isMatch = await bcrypt.compare(currentPassword, user.password);
+    if (!isMatch) {
+      return errorResponse(res, 'Incorrect current password', 400);
+    }
+
+    // Hash and update password
+    user.password = await bcrypt.hash(newPassword, 10);
+    await user.save();
+
+    return successResponse(res, 'Password changed successfully');
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Log in / Sign up using Google OAuth ID Token
+ */
+const googleLogin = async (req, res, next) => {
+  try {
+    const { credential } = req.body;
+    if (!credential) {
+      return errorResponse(res, 'Google ID Token credential is required', 400);
+    }
+
+    const clientId = process.env.GOOGLE_CLIENT_ID;
+    if (!clientId) {
+      return errorResponse(res, 'Google OAuth Client ID is not configured on the server', 500);
+    }
+
+    const client = new OAuth2Client(clientId);
+    
+    // Verify ID Token with Google's public key signatures
+    let payload;
+    try {
+      const ticket = await client.verifyIdToken({
+        idToken: credential,
+        audience: clientId,
+      });
+      payload = ticket.getPayload();
+    } catch (err) {
+      console.error('Google ID token verification failed:', err.message);
+      return errorResponse(res, 'Invalid or expired Google credential', 400);
+    }
+
+    const { email, name, picture } = payload;
+    if (!email) {
+      return errorResponse(res, 'Email not provided by Google account', 400);
+    }
+
+    // Check if user already exists
+    let user = await User.findOne({ where: { email } });
+    let isNewUser = false;
+
+    if (!user) {
+      // Create a new user since they signed in with Google for the first time
+      // Generate a strong random password placeholder
+      const randomPassword = require('crypto').randomBytes(16).toString('hex');
+      const hashedPassword = await bcrypt.hash(randomPassword, 10);
+
+      user = await User.create({
+        fullName: name || 'Google User',
+        email,
+        password: hashedPassword,
+        profileImage: picture || null,
+        role: 'user',
+      });
+      isNewUser = true;
+    } else {
+      // User exists. Update their avatar if it was empty, or check if blocked
+      if (user.isBlocked) {
+        return errorResponse(res, 'Your account is blocked. Please contact support.', 403);
+      }
+      if (!user.profileImage && picture) {
+        user.profileImage = picture;
+        await user.save();
+      }
+    }
+
+    // Generate session tokens
+    const accessToken = generateAccessToken(user);
+    const newRefreshToken = generateRefreshToken(user);
+
+    // Update refresh token in DB
+    user.refreshToken = newRefreshToken;
+    await user.save();
+
+    // Send welcome email if they are a new user
+    if (isNewUser) {
+      sendWelcomeEmail(user.email, user.fullName);
+    }
+
+    // Store refresh token in HttpOnly cookie
+    res.cookie('refreshToken', newRefreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+
+    return successResponse(res, 'Google authentication successful', {
+      user: {
+        id: user.id,
+        fullName: user.fullName,
+        email: user.email,
+        role: user.role,
+        profileImage: user.profileImage,
+        targetRole: user.targetRole,
+        experienceLevel: user.experienceLevel,
+      },
+      accessToken,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   register,
   login,
@@ -307,4 +458,7 @@ module.exports = {
   resetPassword,
   getProfile,
   updateProfile,
+  changePassword,
+  googleLogin,
 };
+

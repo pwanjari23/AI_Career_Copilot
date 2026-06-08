@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import api from '../services/api';
 import { disconnectSocket } from '../services/socket';
 
@@ -74,6 +74,25 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const loginWithGoogle = async (credential) => {
+    setLoading(true);
+    try {
+      const response = await api.post('/auth/google', { credential });
+      const { user: userData, accessToken } = response.data.data;
+      
+      localStorage.setItem('accessToken', accessToken);
+      setUser(userData);
+      return { success: true };
+    } catch (err) {
+      setUser(null);
+      localStorage.removeItem('accessToken');
+      const errorMsg = err.response?.data?.message || 'Google Sign-In failed.';
+      throw errorMsg;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const logout = async () => {
     setLoading(true);
     try {
@@ -85,13 +104,13 @@ export const AuthProvider = ({ children }) => {
       disconnectSocket();
       setUser(null);
       setLoading(false);
-      window.location.href = '/login';
+      window.location.href = '/';
     }
   };
 
-  const updateUserProfile = (updatedUser) => {
+  const updateUserProfile = useCallback((updatedUser) => {
     setUser(updatedUser);
-  };
+  }, []);
 
   const value = {
     user,
@@ -100,6 +119,7 @@ export const AuthProvider = ({ children }) => {
     isAdmin: user?.role === 'admin',
     login,
     register,
+    loginWithGoogle,
     logout,
     updateUserProfile,
   };

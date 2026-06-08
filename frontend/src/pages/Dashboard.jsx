@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 import Card from '../components/Card';
 import { DashboardSkeleton } from '../components/Skeleton';
-import { FileText, Award, AlertCircle, Compass, TrendingUp, Sparkles, CheckCircle2 } from 'lucide-react';
+import { FileText, Award, AlertCircle, Compass, TrendingUp, CheckCircle2, Quote } from 'lucide-react';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -32,11 +32,22 @@ ChartJS.register(
   Filler
 );
 
+const MOTIVATIONAL_QUOTES = [
+  { text: "The only way to do great work is to love what you do.", author: "Steve Jobs" },
+  { text: "First, solve the problem. Then, write the code.", author: "John Johnson" },
+  { text: "Talk is cheap. Show me the code.", author: "Linus Torvalds" },
+  { text: "Knowledge is power, but sharing it is a superpower.", author: "Unknown" },
+  { text: "Clean code always looks like it was written by someone who cares.", author: "Michael Feathers" },
+  { text: "Every great developer you know got there by solving problems they were unqualified to solve.", author: "Patrick McKenzie" },
+];
+
 const Dashboard = () => {
   const { user } = useAuth();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [currentQuoteIndex, setCurrentQuoteIndex] = useState(0);
+  const [animateQuote, setAnimateQuote] = useState(true);
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -50,6 +61,17 @@ const Dashboard = () => {
       }
     };
     fetchStats();
+
+    // Rotate quotes every 4 seconds with a slide/fade transition
+    const interval = setInterval(() => {
+      setAnimateQuote(false);
+      setTimeout(() => {
+        setCurrentQuoteIndex((prev) => (prev + 1) % MOTIVATIONAL_QUOTES.length);
+        setAnimateQuote(true);
+      }, 300); // 300ms matches the fade-out duration
+    }, 4000);
+
+    return () => clearInterval(interval);
   }, []);
 
   if (loading) {
@@ -158,17 +180,27 @@ const Dashboard = () => {
 
   return (
     <div className="space-y-5 text-left">
-      {/* Welcome Banner */}
-      <div className="p-4 bg-gradient-to-r from-primary-600 to-indigo-600 text-white rounded-xl shadow-sm flex flex-col sm:flex-row items-center justify-between gap-3">
-        <div className="space-y-0.5 text-center sm:text-left">
-          <h2 className="text-sm font-bold flex items-center justify-center sm:justify-start space-x-1.5">
-            <Sparkles className="h-4.5 w-4.5 text-amber-300 animate-pulse" />
-            <span>AI Copilot Engine Active</span>
-          </h2>
-          <p className="text-xs font-light text-primary-100 max-w-lg">
-            Analyzing target title: <strong className="font-semibold">{user?.targetRole || 'Not Specified (Update Profile)'}</strong>. Let's look at your progress.
-          </p>
+      {/* Welcome & Wisdom Banner */}
+      <div className="p-5 bg-gradient-to-r from-primary-600 to-indigo-600 text-white rounded-2xl shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4 relative overflow-hidden">
+        {/* Subtle background graphic */}
+        <div className="absolute right-0 top-0 w-32 h-32 bg-white/5 rounded-full blur-2xl pointer-events-none" />
+        
+        <div className="flex items-start space-x-3.5">
+          <div className="p-2 bg-white/10 rounded-xl mt-0.5 flex-shrink-0 text-primary-100">
+            <Quote className="h-5 w-5" />
+          </div>
+          <div className={`space-y-1 transition-all duration-350 transform ${
+            animateQuote ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-1'
+          }`}>
+            <p className="text-sm italic font-medium leading-relaxed text-white">
+              "{MOTIVATIONAL_QUOTES[currentQuoteIndex].text}"
+            </p>
+            <p className="text-xs text-primary-200/80 font-medium">
+              — {MOTIVATIONAL_QUOTES[currentQuoteIndex].author}
+            </p>
+          </div>
         </div>
+
       </div>
 
       {/* Cards Grid */}

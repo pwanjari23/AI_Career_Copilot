@@ -43,6 +43,10 @@ const User = sequelize.define('User', {
     type: DataTypes.BOOLEAN,
     defaultValue: false,
   },
+  isPro: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false,
+  },
   refreshToken: {
     type: DataTypes.TEXT,
     allowNull: true,

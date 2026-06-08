@@ -25,7 +25,9 @@ export default {
         darkCard: '#11131c', // Card container color
       },
       fontFamily: {
-        sans: ['Inter', 'Outfit', 'sans-serif'],
+        sans: ['Inter', 'sans-serif'],
+        mono: ['Inter', 'monospace'],
+        serif: ['Inter', 'serif'],
       },
       animation: {
         'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',

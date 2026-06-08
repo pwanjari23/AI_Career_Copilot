@@ -43,12 +43,10 @@ const forgotPasswordValidator = [
 ];
 
 const resetPasswordValidator = [
-  body('email')
+  body('token')
     .trim()
     .notEmpty()
-    .withMessage('Email address is required')
-    .isEmail()
-    .withMessage('Must be a valid email address'),
+    .withMessage('Reset token is required'),
   body('password')
     .notEmpty()
     .withMessage('New password is required')
@@ -76,10 +74,23 @@ const profileUpdateValidator = [
     .withMessage('Experience level cannot be empty'),
 ];
 
+const changePasswordValidator = [
+  body('currentPassword')
+    .notEmpty()
+    .withMessage('Current password is required'),
+  body('newPassword')
+    .notEmpty()
+    .withMessage('New password is required')
+    .isLength({ min: 6 })
+    .withMessage('New password must be at least 6 characters long'),
+];
+
 module.exports = {
   registerValidator,
   loginValidator,
   forgotPasswordValidator,
   resetPasswordValidator,
   profileUpdateValidator,
+  changePasswordValidator,
 };
+

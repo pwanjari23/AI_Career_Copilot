@@ -20,6 +20,7 @@ const chatbotRoutes = require('./routes/chatbotRoutes');
 const skillRoutes = require('./routes/skillRoutes');
 const roadmapRoutes = require('./routes/roadmapRoutes');
 const adminRoutes = require('./routes/adminRoutes');
+const paymentRoutes = require('./routes/paymentRoutes');
 
 const app = express();
 const server = http.createServer(app);
@@ -73,6 +74,7 @@ app.use('/api/chatbot', chatbotRoutes);
 app.use('/api/skills', skillRoutes);
 app.use('/api/roadmaps', roadmapRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/payments', paymentRoutes);
 
 // Global Error Handler Middleware
 app.use(errorHandler);
@@ -86,8 +88,8 @@ async function startServer() {
     await initializeDatabase();
     
     // 2. Sync database schema structures
-    // In production, we'd use migrations. For deployment-ready ease, sync builds/alters tables automatically.
-    await db.sequelize.sync({ alter: true });
+    // In production, we'd use migrations. For deployment-ready ease, sync builds tables automatically.
+    await db.sequelize.sync();
     console.log('Database schemas synchronized successfully.');
 
     // 3. Start listening
@@ -101,3 +103,7 @@ async function startServer() {
 }
 
 startServer();
+
+// Trigger nodemon restart after database schema changes - Reloaded
+
+

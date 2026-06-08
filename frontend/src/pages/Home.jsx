@@ -45,10 +45,6 @@ const Home = () => {
 
       {/* Hero Section */}
       <section className="relative pt-20 pb-16 px-6 max-w-7xl mx-auto text-center">
-        <div className="inline-flex items-center space-x-2 px-3 py-1.5 rounded-full bg-primary-500/10 text-primary-600 dark:text-primary-400 font-semibold text-xs mb-6 animate-pulse">
-          <Sparkles className="h-4 w-4" />
-          <span>Supercharged by Gemini 1.5 Flash</span>
-        </div>
 
         <h1 className="text-4xl md:text-6xl font-black font-sans leading-tight tracking-tight max-w-4xl mx-auto">
           Engineer Your Career Growth with{' '}
@@ -228,7 +224,7 @@ const Home = () => {
               </ul>
             </div>
             <Link
-              to="/register"
+              to="/checkout"
               className="mt-8 block text-center py-3 bg-primary-500 hover:bg-primary-600 text-white font-semibold rounded-xl shadow-md shadow-primary-500/20 transition-all"
             >
               Get Pro Access

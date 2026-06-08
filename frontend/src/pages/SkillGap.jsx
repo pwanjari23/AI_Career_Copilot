@@ -3,13 +3,30 @@ import api from '../services/api';
 import Card from '../components/Card';
 import Button from '../components/Button';
 import { AlertCircle, Target, CheckCircle, HelpCircle, ArrowRight, Sparkles, BookOpen } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import ProFeatureLock from '../components/ProFeatureLock';
 
 const SkillGap = () => {
+  const { user } = useAuth();
   const [targetRole, setTargetRole] = useState('');
   const [customSkills, setCustomSkills] = useState('');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
+
+  if (user && !user.isPro && user.role !== 'admin') {
+    return (
+      <ProFeatureLock
+        title="Skill Gap Diagnostics"
+        description="Pinpoint precisely which capabilities you need to acquire to fit your dream development role and get recommended learning strategies."
+        benefits={[
+          "Analyze resume content against software positions",
+          "Identify matching skills and isolate critical gaps",
+          "Receive customized action plan strategies"
+        ]}
+      />
+    );
+  }
 
   const handleAnalyze = async () => {
     if (!targetRole.trim()) return;

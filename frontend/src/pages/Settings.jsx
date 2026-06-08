@@ -10,6 +10,7 @@ const Settings = () => {
   const { theme, toggleTheme } = useTheme();
   const { user } = useAuth();
 
+  const [currentPassword, setCurrentPassword] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -18,6 +19,9 @@ const Settings = () => {
 
   const handlePasswordUpdate = async (e) => {
     e.preventDefault();
+    if (!currentPassword) {
+      return setError('Current password is required');
+    }
     if (password !== confirmPassword) {
       return setError('Passwords do not match');
     }
@@ -30,8 +34,9 @@ const Settings = () => {
     setSuccess(false);
 
     try {
-      await api.post('/auth/reset-password', { email: user.email, password });
+      await api.post('/auth/change-password', { currentPassword, newPassword: password });
       setSuccess(true);
+      setCurrentPassword('');
       setPassword('');
       setConfirmPassword('');
     } catch (err) {
@@ -117,6 +122,18 @@ const Settings = () => {
         )}
 
         <form onSubmit={handlePasswordUpdate} className="space-y-4">
+          <div>
+            <label className="block text-xs font-bold text-gray-400 mb-2">Current Password</label>
+            <input
+              type="password"
+              required
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              className="w-full px-4 py-2.5 rounded-xl border border-gray-250 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm"
+              placeholder="••••••••"
+            />
+          </div>
+
           <div>
             <label className="block text-xs font-bold text-gray-400 mb-2">New Password</label>
             <input

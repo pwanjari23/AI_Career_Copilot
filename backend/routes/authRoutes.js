@@ -11,6 +11,7 @@ const {
   forgotPasswordValidator,
   resetPasswordValidator,
   profileUpdateValidator,
+  changePasswordValidator,
 } = require('../validators/authValidator');
 
 // Public Auth Endpoints
@@ -20,9 +21,17 @@ router.post('/refresh-token', authController.refreshToken);
 router.post('/logout', authController.logout);
 router.post('/forgot-password', forgotPasswordValidator, validateRequest, authController.forgotPassword);
 router.post('/reset-password', resetPasswordValidator, validateRequest, authController.resetPassword);
+router.post('/google', authController.googleLogin);
 
 // Protected Auth Endpoints
 router.get('/profile', authenticateJWT, authController.getProfile);
+router.post(
+  '/change-password',
+  authenticateJWT,
+  changePasswordValidator,
+  validateRequest,
+  authController.changePassword
+);
 router.put(
   '/profile',
   authenticateJWT,

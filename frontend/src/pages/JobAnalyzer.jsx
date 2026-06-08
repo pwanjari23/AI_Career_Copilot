@@ -4,12 +4,29 @@ import Card from '../components/Card';
 import Button from '../components/Button';
 import { AlertCircle, Sparkles, CheckCircle, HelpCircle, FileText } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import ProFeatureLock from '../components/ProFeatureLock';
 
 const JobAnalyzer = () => {
+  const { user } = useAuth();
   const [jobDescription, setJobDescription] = useState('');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
+
+  if (user && !user.isPro && user.role !== 'admin') {
+    return (
+      <ProFeatureLock
+        title="Job Description Matcher"
+        description="Verify how well your resume scores against specific job advertisements and discover missing keywords before applying."
+        benefits={[
+          "Compare custom resume text with JD requirements",
+          "Isolate target software engineering keywords",
+          "Identify missing skills and alignment scoring"
+        ]}
+      />
+    );
+  }
 
   const handleCompare = async () => {
     if (!jobDescription.trim()) return;

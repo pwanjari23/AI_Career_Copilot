@@ -88,7 +88,7 @@ const Profile = () => {
           {/* Avatar upload */}
           <div className="flex flex-col sm:flex-row items-center gap-6 pb-4 border-b border-gray-100 dark:border-gray-800">
             <img
-              src={user?.profileImage ? `http://localhost:5000${user.profileImage}` : `https://api.dicebear.com/7.x/adventurer/svg?seed=${user?.fullName || 'Copilot'}`}
+              src={user?.profileImage ? (user.profileImage.startsWith('http') ? user.profileImage : `http://localhost:5000${user.profileImage}`) : `https://api.dicebear.com/7.x/adventurer/svg?seed=${user?.fullName || 'Copilot'}`}
               alt="Avatar Preview"
               className="h-20 w-20 rounded-2xl object-cover bg-gray-100 dark:bg-gray-800 border-2 border-primary-500/20"
             />

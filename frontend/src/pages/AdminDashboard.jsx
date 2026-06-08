@@ -12,6 +12,7 @@ const AdminDashboard = () => {
   const [usersList, setUsersList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [userToDelete, setUserToDelete] = useState(null);
 
   // Client-Side Security Guard
   if (user?.role !== 'admin') {
@@ -40,6 +41,7 @@ const AdminDashboard = () => {
   }, []);
 
   const handleToggleBlock = async (userId) => {
+    setError(null);
     try {
       const res = await api.put(`/admin/users/${userId}/block`);
       // Update local state
@@ -47,22 +49,23 @@ const AdminDashboard = () => {
         prev.map((u) => (u.id === userId ? { ...u, isBlocked: res.data.data.isBlocked } : u))
       );
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to update user block status.');
+      setError(err.response?.data?.message || 'Failed to update user block status.');
     }
   };
-
-  const handleDeleteUser = async (userId) => {
-    if (!window.confirm('Are you sure you want to permanently delete this user? All associated resumes, interviews, chatbot logs and roadmaps will be deleted.')) {
-      return;
-    }
+ 
+  const handleDeleteUser = async () => {
+    if (!userToDelete) return;
+    setError(null);
     
     try {
-      await api.delete(`/admin/users/${userId}`);
-      setUsersList((prev) => prev.filter((u) => u.id !== userId));
+      await api.delete(`/admin/users/${userToDelete}`);
+      setUsersList((prev) => prev.filter((u) => u.id !== userToDelete));
+      setUserToDelete(null);
       // Refresh stats count
       loadData();
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to delete user.');
+      setError(err.response?.data?.message || 'Failed to delete user.');
+      setUserToDelete(null);
     }
   };
 
@@ -209,7 +212,7 @@ const AdminDashboard = () => {
                           <Ban className="h-4 w-4" />
                         </button>
                         <button
-                          onClick={() => handleDeleteUser(usr.id)}
+                          onClick={() => setUserToDelete(usr.id)}
                           className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-red-500 transition-colors inline-flex"
                           title="Delete User"
                         >
@@ -224,6 +227,39 @@ const AdminDashboard = () => {
           </table>
         </div>
       </Card>
+
+      {/* Custom Confirmation Modal */}
+      {userToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 dark:bg-black/60 backdrop-blur-sm animate-fade-in text-left">
+          <div className="bg-white dark:bg-darkCard rounded-3xl border border-gray-200/50 dark:border-gray-800/50 p-6 max-w-sm w-full shadow-2xl animate-scale-in text-center space-y-4">
+            <div className="mx-auto h-12 w-12 bg-red-100 dark:bg-red-950/30 text-red-500 rounded-full flex items-center justify-center">
+              <ShieldAlert className="h-6 w-6" />
+            </div>
+            <div className="space-y-2">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white">Delete User Account?</h3>
+              <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+                Are you sure you want to permanently delete this user? All associated resumes, interviews, chatbot logs and roadmaps will be deleted. This action cannot be undone.
+              </p>
+            </div>
+            <div className="flex space-x-3 pt-2">
+              <Button
+                variant="outline"
+                className="flex-1 rounded-xl"
+                onClick={() => setUserToDelete(null)}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="danger"
+                className="flex-1 rounded-xl"
+                onClick={handleDeleteUser}
+              >
+                Yes, Delete
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

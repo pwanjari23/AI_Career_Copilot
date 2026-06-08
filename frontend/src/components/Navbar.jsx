@@ -1,5 +1,6 @@
 import React from 'react';
-import { Menu, Bell } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Menu, Bell, Sparkles } from 'lucide-react';
 import ThemeToggle from './ThemeToggle';
 import { useAuth } from '../context/AuthContext';
 
@@ -22,13 +23,10 @@ const Navbar = ({ onMenuClick }) => {
         >
           <Menu className="h-5 w-5" />
         </button>
-        <div className="text-left">
+        <div className="text-left flex items-center space-x-2">
           <h1 className="text-sm font-bold text-gray-800 dark:text-white hidden sm:block font-sans">
             Hello, {user?.fullName?.split(' ')[0]} 👋
           </h1>
-          <p className="text-[10px] text-gray-400 hidden sm:block font-sans font-light">
-            Career Copilot active | {formattedDate}
-          </p>
         </div>
       </div>
 
@@ -38,12 +36,17 @@ const Navbar = ({ onMenuClick }) => {
           {formattedDate}
         </span>
 
-        {/* Notifications mock icon */}
-        <button className="p-1.5 rounded-lg transition-all duration-300 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400 relative">
-          <Bell className="h-4.5 w-4.5" />
-          <span className="absolute top-1 right-1 h-1.5 w-1.5 rounded-full bg-primary-500 animate-ping" />
-          <span className="absolute top-1 right-1 h-1.5 w-1.5 rounded-full bg-primary-500" />
-        </button>
+        {/* Get Pro Access button */}
+        {user && !user.isPro && (
+          <Link
+            to="/checkout"
+            className="flex items-center space-x-1 px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider bg-gradient-to-r from-primary-500 to-indigo-600 hover:from-primary-600 hover:to-indigo-700 text-white rounded-lg shadow-md shadow-primary-500/20 transition-all duration-300 hover:-translate-y-0.5"
+          >
+            <Sparkles className="h-3 w-3" />
+            <span>Get Pro</span>
+          </Link>
+        )}
+
 
         {/* Theme Toggle switch */}
         <ThemeToggle />
@@ -51,12 +54,12 @@ const Navbar = ({ onMenuClick }) => {
         {/* Profile Avatar indicator */}
         <div className="flex items-center space-x-2 border-l border-gray-200 dark:border-gray-800 pl-3">
           <img
-            src={user?.profileImage ? `http://localhost:5000${user.profileImage}` : `https://api.dicebear.com/7.x/adventurer/svg?seed=${user?.fullName || 'Copilot'}`}
+            src={user?.profileImage ? (user.profileImage.startsWith('http') ? user.profileImage : `http://localhost:5000${user.profileImage}`) : `https://api.dicebear.com/7.x/adventurer/svg?seed=${user?.fullName || 'Copilot'}`}
             alt="Profile Avatar"
-            className="h-7 w-7 rounded-lg object-cover bg-gray-100 dark:bg-gray-800 border border-gray-200/50 dark:border-gray-700/50"
+            className={`h-7 w-7 rounded-lg object-cover bg-gray-100 dark:bg-gray-800 border ${user?.isPro ? 'border-primary-500 ring-2 ring-primary-500/20' : 'border-gray-200/50 dark:border-gray-700/50'}`}
           />
-          <span className="text-[10px] font-semibold text-gray-500 hidden md:block max-w-[90px] truncate">
-            {user?.targetRole || 'Developer'}
+          <span className="text-[10px] font-semibold text-gray-500 hidden md:block max-w-[120px] truncate">
+            {user?.fullName}
           </span>
         </div>
       </div>

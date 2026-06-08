@@ -1,3 +1,5 @@
+const fs = require('fs');
+const path = require('path');
 const Resume = require('../models/resume');
 const { parsePdf } = require('../services/pdfService');
 const { analyzeResume } = require('../services/geminiService');
@@ -35,6 +37,8 @@ const uploadAndAnalyzeResume = async (req, res, next) => {
       education: aiAnalysis.education || [],
       projects: aiAnalysis.projects || [],
       experience: aiAnalysis.experience || [],
+      missingSkills: aiAnalysis.missingSkills || [],
+      suggestions: aiAnalysis.suggestions || [],
     });
 
     return successResponse(res, 'Resume analyzed and stored successfully', resumeRecord, 201);
@@ -79,8 +83,44 @@ const getLatestResume = async (req, res, next) => {
   }
 };
 
+/**
+ * Clear all resumes and files for the authenticated user
+ */
+const clearResumeHistory = async (req, res, next) => {
+  try {
+    // 1. Find all resumes for this user to delete physical files
+    const resumes = await Resume.findAll({
+      where: { userId: req.user.id },
+    });
+
+    // 2. Loop and delete each file
+    for (const resume of resumes) {
+      if (resume.resumeUrl) {
+        const filename = resume.resumeUrl.replace('/uploads/', '');
+        const filePath = path.join(__dirname, '../uploads', filename);
+        
+        fs.unlink(filePath, (err) => {
+          if (err) {
+            console.error(`Failed to delete physical file: ${filePath}`, err.message);
+          }
+        });
+      }
+    }
+
+    // 3. Delete database records
+    await Resume.destroy({
+      where: { userId: req.user.id },
+    });
+
+    return successResponse(res, 'Resume history cleared successfully');
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   uploadAndAnalyzeResume,
   getUserResumes,
   getLatestResume,
+  clearResumeHistory,
 };

@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import api from '../services/api';
 import Card from '../components/Card';
 import Button from '../components/Button';
 import { Award, ArrowRight, MessageSquare, AlertCircle, RefreshCw, CheckCircle2, ChevronRight, BarChart } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 const CATEGORIES = [
   { name: 'Frontend Developer', desc: 'HTML5, CSS3, Core JS, Browser APIs, Web Optimization' },
@@ -14,6 +16,7 @@ const CATEGORIES = [
 ];
 
 const MockInterview = () => {
+  const { user } = useAuth();
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -28,6 +31,22 @@ const MockInterview = () => {
   const [evaluation, setEvaluation] = useState(null); // { questionRecord, completed }
   const [answeredMap, setAnsweredMap] = useState([]); // Array of evaluation records
   const [interviewComplete, setInterviewComplete] = useState(false);
+  const [interviews, setInterviews] = useState([]);
+
+  const fetchInterviews = async () => {
+    try {
+      const res = await api.get('/interviews');
+      if (res.data.data) {
+        setInterviews(res.data.data);
+      }
+    } catch (err) {
+      console.error('Failed to load interview history:', err.message);
+    }
+  };
+
+  useEffect(() => {
+    fetchInterviews();
+  }, []);
 
   const handleStart = async (category) => {
     setLoading(true);
@@ -40,6 +59,7 @@ const MockInterview = () => {
       setEvaluation(null);
       setAnsweredMap([]);
       setInterviewComplete(false);
+      fetchInterviews();
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to start interview session.');
     } finally {
@@ -92,11 +112,19 @@ const MockInterview = () => {
   if (!session) {
     return (
       <div className="space-y-8 text-left">
-        <div>
-          <h2 className="text-2xl font-bold font-sans">AI Mock Interview Platform</h2>
-          <p className="text-gray-500 dark:text-gray-400 text-sm">
-            Select a developer specialization. Gemini will generate 10 customized technical questions to evaluate you.
-          </p>
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h2 className="text-2xl font-bold font-sans">AI Mock Interview Platform</h2>
+            <p className="text-gray-500 dark:text-gray-400 text-sm">
+              Select a developer specialization. Gemini will generate 10 customized technical questions to evaluate you.
+            </p>
+          </div>
+          {!user?.isPro && user?.role !== 'admin' && (
+            <div className="px-3.5 py-2 rounded-xl bg-primary-500/5 dark:bg-primary-500/10 text-xs border border-primary-500/20 flex justify-between items-center gap-3 font-bold">
+              <span className="text-gray-500 dark:text-gray-400">Slots Used:</span>
+              <span className="text-primary-500">{interviews.length} / 2 Sessions</span>
+            </div>
+          )}
         </div>
 
         {error && (
@@ -106,46 +134,68 @@ const MockInterview = () => {
           </div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {CATEGORIES.map((cat, idx) => (
-            <div
-              key={idx}
-              onClick={() => setSelectedCategory(cat.name)}
-              className={`glass-card p-6 bg-white dark:bg-darkCard rounded-2xl border cursor-pointer transition-all duration-300 relative overflow-hidden ${
-                selectedCategory === cat.name
-                  ? 'border-primary-500 ring-2 ring-primary-500/20'
-                  : 'border-gray-200/50 dark:border-gray-800/50'
-              }`}
-            >
-              <div className="flex items-center space-x-3 mb-3">
-                <div className={`p-2 rounded-lg ${selectedCategory === cat.name ? 'bg-primary-500 text-white' : 'bg-primary-500/10 text-primary-500'}`}>
-                  <Award className="h-5 w-5" />
-                </div>
-                <h4 className="font-bold text-sm text-gray-800 dark:text-gray-200">{cat.name}</h4>
-              </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed min-h-[40px]">
-                {cat.desc}
-              </p>
-              {selectedCategory === cat.name && (
-                <div className="absolute top-2 right-2 text-primary-500 font-bold text-xs">
-                  ✓ Selected
-                </div>
-              )}
+        {!user?.isPro && user?.role !== 'admin' && interviews.length >= 2 ? (
+          <div className="glass-card max-w-md mx-auto p-8 border border-amber-500/20 bg-amber-500/5 rounded-3xl text-center space-y-5 shadow-lg">
+            <div className="h-14 w-14 bg-amber-500/10 text-amber-500 rounded-full flex items-center justify-center mx-auto">
+              <AlertCircle className="h-7 w-7" />
             </div>
-          ))}
-        </div>
+            <div className="space-y-1">
+              <h4 className="text-lg font-bold text-gray-800 dark:text-gray-200">Starter Limit Reached</h4>
+              <p className="text-xs text-gray-400 leading-relaxed font-light">
+                You have successfully completed 2 mock interview sessions on the Starter plan. Please upgrade to Pro to unlock unlimited interview sessions and detailed question review history.
+              </p>
+            </div>
+            <Link
+              to="/checkout"
+              className="block w-full py-3 bg-gradient-to-r from-primary-500 to-indigo-650 text-white font-extrabold text-xs uppercase tracking-wider rounded-xl text-center shadow-md shadow-primary-500/20"
+            >
+              Upgrade to Pro
+            </Link>
+          </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {CATEGORIES.map((cat, idx) => (
+                <div
+                  key={idx}
+                  onClick={() => setSelectedCategory(cat.name)}
+                  className={`glass-card p-6 bg-white dark:bg-darkCard rounded-2xl border cursor-pointer transition-all duration-300 relative overflow-hidden ${
+                    selectedCategory === cat.name
+                      ? 'border-primary-500 ring-2 ring-primary-500/20'
+                      : 'border-gray-200/50 dark:border-gray-800/50'
+                  }`}
+                >
+                  <div className="flex items-center space-x-3 mb-3">
+                    <div className={`p-2 rounded-lg ${selectedCategory === cat.name ? 'bg-primary-500 text-white' : 'bg-primary-500/10 text-primary-500'}`}>
+                      <Award className="h-5 w-5" />
+                    </div>
+                    <h4 className="font-bold text-sm text-gray-800 dark:text-gray-200">{cat.name}</h4>
+                  </div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed min-h-[40px]">
+                    {cat.desc}
+                  </p>
+                  {selectedCategory === cat.name && (
+                    <div className="absolute top-2 right-2 text-primary-500 font-bold text-xs">
+                      ✓ Selected
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
 
-        <div className="flex justify-end pt-4">
-          <Button
-            onClick={() => handleStart(selectedCategory)}
-            disabled={!selectedCategory}
-            loading={loading}
-            className="px-8"
-          >
-            <span>Start Mock Interview</span>
-            <ChevronRight className="h-4 w-4 ml-2" />
-          </Button>
-        </div>
+            <div className="flex justify-end pt-4">
+              <Button
+                onClick={() => handleStart(selectedCategory)}
+                disabled={!selectedCategory}
+                loading={loading}
+                className="px-8"
+              >
+                <span>Start Mock Interview</span>
+                <ChevronRight className="h-4 w-4 ml-2" />
+              </Button>
+            </div>
+          </>
+        )}
       </div>
     );
   }

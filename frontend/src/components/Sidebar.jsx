@@ -95,25 +95,9 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
 
         {/* Bottom Profile Info */}
         <div className="p-3 border-t border-gray-100 dark:border-gray-800/80">
-          <div className="flex items-center space-x-2.5 px-2 py-2">
-            <img
-              src={user?.profileImage ? `http://localhost:5000${user.profileImage}` : `https://api.dicebear.com/7.x/adventurer/svg?seed=${user?.fullName || 'Copilot'}`}
-              alt="Profile"
-              className="h-8 w-8 rounded-lg object-cover bg-gray-100 dark:bg-gray-800 border border-gray-200/50 dark:border-gray-700/50"
-            />
-            <div className="flex-1 min-w-0 text-left">
-              <p className="text-xs font-bold truncate text-gray-700 dark:text-gray-200">
-                {user?.fullName}
-              </p>
-              <p className="text-[9px] truncate text-gray-400 capitalize">
-                {user?.role} Mode
-              </p>
-            </div>
-          </div>
-          
           <button
             onClick={logout}
-            className="w-full flex items-center space-x-2.5 px-3 py-2.5 mt-1 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-950/10 text-xs font-semibold transition-all duration-200"
+            className="w-full flex items-center space-x-2.5 px-3 py-2.5 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-950/10 text-xs font-semibold transition-all duration-200"
           >
             <LogOut className="h-4.5 w-4.5 flex-shrink-0" />
             <span>Sign Out</span>

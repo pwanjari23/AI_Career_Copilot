@@ -5,12 +5,112 @@ import Card from '../components/Card';
 import Button from '../components/Button';
 import { Bot, Send, Trash2, AlertCircle, Sparkles, User } from 'lucide-react';
 
+const parseInlineStyles = (text) => {
+  if (!text) return '';
+  const inlineRegex = /(\*\*.*?\*\*|`.*?`)/g;
+  const parts = text.split(inlineRegex);
+  return parts.map((part, partIdx) => {
+    if (part.startsWith('**') && part.endsWith('**')) {
+      return <strong key={partIdx} className="font-semibold text-gray-900 dark:text-white">{part.slice(2, -2)}</strong>;
+    } else if (part.startsWith('`') && part.endsWith('`')) {
+      return <code key={partIdx} className="px-1.5 py-0.5 bg-gray-200 dark:bg-gray-700/60 rounded font-mono text-xs text-red-500 dark:text-red-400">{part.slice(1, -1)}</code>;
+    }
+    return part;
+  });
+};
+
+const renderFormattedText = (text) => {
+  if (!text) return null;
+  const lines = text.split('\n');
+  const renderedElements = [];
+  let inCodeBlock = false;
+  let codeLines = [];
+  let codeLanguage = '';
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+
+    if (line.trim().startsWith('```')) {
+      if (inCodeBlock) {
+        renderedElements.push(
+          <pre key={`code-${i}`} className="p-3 bg-gray-950 text-gray-100 rounded-xl font-mono text-[11px] overflow-x-auto my-2 border border-gray-800 text-left">
+            {codeLanguage && (
+              <span className="block text-[9px] text-gray-500 font-bold uppercase tracking-wider mb-1 select-none">
+                {codeLanguage}
+              </span>
+            )}
+            <code>{codeLines.join('\n')}</code>
+          </pre>
+        );
+        codeLines = [];
+        inCodeBlock = false;
+      } else {
+        inCodeBlock = true;
+        codeLanguage = line.trim().substring(3).trim();
+      }
+      continue;
+    }
+
+    if (inCodeBlock) {
+      codeLines.push(line);
+      continue;
+    }
+
+    // Headers
+    const headerMatch = line.match(/^(#{1,6})\s+(.*)$/);
+    if (headerMatch) {
+      const level = headerMatch[1].length;
+      const content = parseInlineStyles(headerMatch[2]);
+      const Tag = `h${Math.min(6, level + 1)}`;
+      const classes = level === 1 
+        ? "text-base font-bold my-2 text-gray-900 dark:text-white" 
+        : level === 2 
+        ? "text-sm font-bold my-1.5 text-gray-800 dark:text-gray-100" 
+        : "text-xs font-semibold my-1 text-gray-700 dark:text-gray-200";
+      renderedElements.push(<Tag key={i} className={classes}>{content}</Tag>);
+      continue;
+    }
+
+    // List items
+    const listMatch = line.match(/^(\*|-|\d+\.)\s+(.*)$/);
+    if (listMatch) {
+      const content = parseInlineStyles(listMatch[2]);
+      renderedElements.push(
+        <div key={i} className="flex items-start space-x-2 my-1 ml-3 text-xs leading-relaxed text-left">
+          <span className="text-primary-500 font-bold select-none mt-0.5">•</span>
+          <span className="flex-1 text-gray-700 dark:text-gray-300">{content}</span>
+        </div>
+      );
+      continue;
+    }
+
+    // Paragraph
+    const content = parseInlineStyles(line);
+    renderedElements.push(
+      <p key={i} className={line.trim() === '' ? 'h-2' : 'my-1 text-gray-700 dark:text-gray-300 text-left'}>
+        {content}
+      </p>
+    );
+  }
+
+  if (inCodeBlock && codeLines.length > 0) {
+    renderedElements.push(
+      <pre key="code-unclosed" className="p-3 bg-gray-950 text-gray-100 rounded-xl font-mono text-[11px] overflow-x-auto my-2 border border-gray-800 text-left">
+        <code>{codeLines.join('\n')}</code>
+      </pre>
+    );
+  }
+
+  return <div className="space-y-1">{renderedElements}</div>;
+};
+
 const CareerChatbot = () => {
   const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState('');
   const [typing, setTyping] = useState(false);
   const [error, setError] = useState(null);
   const [loadingHistory, setLoadingHistory] = useState(true);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
   const messagesEndRef = useRef(null);
   const socketRef = useRef(null);
 
@@ -89,13 +189,13 @@ const CareerChatbot = () => {
   };
 
   const handleClearHistory = async () => {
-    if (!window.confirm('Are you sure you want to clear your conversation history?')) return;
-    
     try {
       await api.delete('/chatbot/history');
       setMessages([]);
+      setShowConfirmModal(false);
     } catch (err) {
       setError('Failed to delete chat history.');
+      setShowConfirmModal(false);
     }
   };
 
@@ -113,7 +213,7 @@ const CareerChatbot = () => {
         </div>
         {messages.length > 0 && (
           <button
-            onClick={handleClearHistory}
+            onClick={() => setShowConfirmModal(true)}
             className="flex items-center space-x-2 px-3.5 py-2 text-xs font-semibold text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-xl transition-all"
           >
             <Trash2 className="h-4 w-4" />
@@ -169,7 +269,11 @@ const CareerChatbot = () => {
                         : 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded-tl-none'
                     }`}
                   >
-                    <p className="whitespace-pre-wrap">{msg.text}</p>
+                    {msg.sender === 'user' ? (
+                      <p className="whitespace-pre-wrap">{msg.text}</p>
+                    ) : (
+                      renderFormattedText(msg.text)
+                    )}
                   </div>
                 </div>
               </div>
@@ -218,6 +322,39 @@ const CareerChatbot = () => {
           </form>
         </div>
       </Card>
+
+      {/* Custom Confirmation Modal */}
+      {showConfirmModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 dark:bg-black/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white dark:bg-darkCard rounded-3xl border border-gray-200/50 dark:border-gray-800/50 p-6 max-w-sm w-full shadow-2xl animate-scale-in text-center space-y-4">
+            <div className="mx-auto h-12 w-12 bg-red-100 dark:bg-red-950/30 text-red-500 rounded-full flex items-center justify-center">
+              <AlertCircle className="h-6 w-6" />
+            </div>
+            <div className="space-y-2">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white">Clear Chat Logs?</h3>
+              <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+                This will permanently delete all your conversation history with the Career Copilot. This action cannot be undone.
+              </p>
+            </div>
+            <div className="flex space-x-3 pt-2">
+              <Button
+                variant="outline"
+                className="flex-1 rounded-xl"
+                onClick={() => setShowConfirmModal(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="danger"
+                className="flex-1 rounded-xl"
+                onClick={handleClearHistory}
+              >
+                Yes, Clear
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

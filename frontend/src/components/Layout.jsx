@@ -23,7 +23,8 @@ const Layout = () => {
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+    const redirectUrl = encodeURIComponent(window.location.pathname + window.location.search);
+    return <Navigate to={`/login?redirect=${redirectUrl}`} replace />;
   }
 
   return (

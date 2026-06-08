@@ -1,7 +1,9 @@
 const { Server } = require('socket.io');
 const { verifyAccessToken } = require('../utils/tokenUtils');
 const ChatHistory = require('../models/chatHistory');
+const User = require('../models/user');
 const { getChatbotResponse } = require('./geminiService');
+const { Op } = require('sequelize');
 
 let io = null;
 
@@ -46,6 +48,36 @@ const initSocket = (server) => {
         const { message } = data;
         if (!message || message.trim().length === 0) {
           return socket.emit('chat_error', { message: 'Message content cannot be empty' });
+        }
+
+        // Check if user is Pro
+        const userRecord = await User.findByPk(socket.user.id);
+        if (!userRecord) {
+          return socket.emit('chat_error', { message: 'User not found' });
+        }
+
+        if (!userRecord.isPro && userRecord.role !== 'admin') {
+          const startOfDay = new Date();
+          startOfDay.setHours(0, 0, 0, 0);
+
+          const endOfDay = new Date();
+          endOfDay.setHours(23, 59, 59, 999);
+
+          const chatCount = await ChatHistory.count({
+            where: {
+              userId: socket.user.id,
+              createdAt: {
+                [Op.between]: [startOfDay, endOfDay],
+              },
+            },
+          });
+
+          if (chatCount >= 20) {
+            socket.emit('typing', { typing: false });
+            return socket.emit('chat_error', {
+              message: 'You have reached your limit of 20 chatbot queries per day on the Starter plan. Please upgrade to Pro for unlimited mentoring.'
+            });
+          }
         }
 
         // 1. Fetch user's previous 10 chat messages to maintain context

@@ -29,10 +29,7 @@ const About = () => {
       {/* Main container */}
       <main className="max-w-4xl mx-auto py-16 px-6 text-center space-y-12">
         <div className="space-y-4">
-          <div className="inline-flex items-center space-x-2 px-3 py-1.5 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 font-semibold text-xs">
-            <Sparkles className="h-4 w-4" />
-            <span>Our Vision</span>
-          </div>
+          
           <h1 className="text-4xl font-extrabold font-sans">Empowering Tomorrow's Engineers</h1>
           <p className="text-lg text-gray-500 dark:text-gray-400 font-light max-w-2xl mx-auto">
             We bridge the gap between academic theory, resume presentations, and core technical interviews through targeted AI diagnostics.

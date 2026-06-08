@@ -7,6 +7,7 @@ const InterviewAnswer = require('./interviewAnswer');
 const ChatHistory = require('./chatHistory');
 const SkillAnalysis = require('./skillAnalysis');
 const Roadmap = require('./roadmap');
+const Payment = require('./payment');
 
 // Define Relationships
 
@@ -38,6 +39,10 @@ SkillAnalysis.belongsTo(User, { foreignKey: 'userId' });
 User.hasMany(Roadmap, { foreignKey: 'userId', onDelete: 'CASCADE' });
 Roadmap.belongsTo(User, { foreignKey: 'userId' });
 
+// User <-> Payment
+User.hasMany(Payment, { foreignKey: 'userId', onDelete: 'CASCADE' });
+Payment.belongsTo(User, { foreignKey: 'userId' });
+
 module.exports = {
   sequelize,
   User,
@@ -48,4 +53,5 @@ module.exports = {
   ChatHistory,
   SkillAnalysis,
   Roadmap,
+  Payment,
 };

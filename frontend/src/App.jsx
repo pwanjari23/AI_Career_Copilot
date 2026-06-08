@@ -10,6 +10,7 @@ import About from './pages/About';
 import Contact from './pages/Contact';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import ResetPassword from './pages/ResetPassword';
 
 // Protected Pages
 import Dashboard from './pages/Dashboard';
@@ -22,6 +23,8 @@ import Roadmap from './pages/Roadmap';
 import Profile from './pages/Profile';
 import Settings from './pages/Settings';
 import AdminDashboard from './pages/AdminDashboard';
+import Checkout from './pages/Checkout';
+import PaymentStatus from './pages/PaymentStatus';
 
 function App() {
   return (
@@ -35,6 +38,7 @@ function App() {
             <Route path="/contact" element={<Contact />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
 
             {/* Protected Routes Wrapper */}
             <Route element={<Layout />}>
@@ -48,6 +52,8 @@ function App() {
               <Route path="/profile" element={<Profile />} />
               <Route path="/settings" element={<Settings />} />
               <Route path="/admin" element={<AdminDashboard />} />
+              <Route path="/checkout" element={<Checkout />} />
+              <Route path="/payment-status" element={<PaymentStatus />} />
             </Route>
 
             {/* Fallback Redirects */}
