@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Menu, Bell, Sparkles } from 'lucide-react';
+import { Menu, Bell, Sparkles, Crown } from 'lucide-react';
 import ThemeToggle from './ThemeToggle';
 import { useAuth } from '../context/AuthContext';
 
@@ -25,7 +25,7 @@ const Navbar = ({ onMenuClick }) => {
         </button>
         <div className="text-left flex items-center space-x-2">
           <h1 className="text-sm font-bold text-gray-800 dark:text-white hidden sm:block font-sans">
-            Hello, {user?.fullName?.split(' ')[0]} 👋
+            Hello, {user?.fullName?.split(' ')[0]} 
           </h1>
         </div>
       </div>
@@ -45,6 +45,16 @@ const Navbar = ({ onMenuClick }) => {
             <Sparkles className="h-3 w-3" />
             <span>Get Pro</span>
           </Link>
+        )}
+
+        {/* Pro Member button/badge */}
+        {user && user.isPro && (
+          <div
+            className="flex items-center space-x-1 px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider bg-gradient-to-r from-primary-500 to-indigo-600 hover:from-primary-600 hover:to-indigo-700 text-white rounded-lg shadow-md shadow-primary-500/20 transition-all duration-300 hover:-translate-y-0.5"
+          >
+            <Crown className="h-3 w-3 text-white fill-white/80 animate-pulse" />
+            <span>Pro Member</span>
+          </div>
         )}
 
 
