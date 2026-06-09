@@ -31,7 +31,7 @@ async function initializeDatabase() {
       host: dbConfig.host,
       port: dbConfig.port,
       dialect: 'mysql',
-      logging: false, // Set to console.log in dev if debugging SQL queries is needed
+      logging: false, 
       pool: {
         max: 5,
         min: 0,
@@ -47,7 +47,6 @@ async function initializeDatabase() {
   }
 }
 
-// Instantiate fallback Sequelize object for imports before initialization
 const fallbackSequelize = new Sequelize(dbConfig.database, dbConfig.user, dbConfig.password, {
   host: dbConfig.host,
   port: dbConfig.port,
@@ -57,5 +56,5 @@ const fallbackSequelize = new Sequelize(dbConfig.database, dbConfig.user, dbConf
 
 module.exports = {
   initializeDatabase,
-  sequelize: fallbackSequelize, // Export base instance for schemas
+  sequelize: fallbackSequelize, 
 };

@@ -3,16 +3,12 @@ const Resume = require('../models/resume');
 const Interview = require('../models/interview');
 const { successResponse, errorResponse } = require('../utils/apiResponse');
 
-/**
- * Fetch global platform analytics for the admin panel
- */
 const getPlatformStats = async (req, res, next) => {
   try {
     const totalUsers = await User.count({ where: { role: 'user' } });
     const totalResumes = await Resume.count();
     const totalInterviews = await Interview.count();
 
-    // Calculate Average ATS score across all uploads
     const resumeAtsStats = await Resume.findAll({
       attributes: ['atsScore'],
     });
@@ -20,7 +16,7 @@ const getPlatformStats = async (req, res, next) => {
       ? Math.round(resumeAtsStats.reduce((sum, r) => sum + (r.atsScore || 0), 0) / resumeAtsStats.length)
       : 0;
 
-    // Calculate Average Interview Score across all sessions
+  
     const interviewStats = await Interview.findAll({
       attributes: ['overallScore'],
       where: { overallScore: { [require('sequelize').Op.ne]: null } },
@@ -29,7 +25,6 @@ const getPlatformStats = async (req, res, next) => {
       ? Math.round(interviewStats.reduce((sum, i) => sum + i.overallScore, 0) / interviewStats.length)
       : 0;
 
-    // Users distribution by experience level
     const users = await User.findAll({
       attributes: ['experienceLevel', 'targetRole'],
       where: { role: 'user' },
@@ -64,9 +59,7 @@ const getPlatformStats = async (req, res, next) => {
   }
 };
 
-/**
- * List all users (excluding sensitive credentials)
- */
+
 const getAllUsers = async (req, res, next) => {
   try {
     const users = await User.findAll({
@@ -80,9 +73,6 @@ const getAllUsers = async (req, res, next) => {
   }
 };
 
-/**
- * Block or Unblock a user
- */
 const toggleUserBlock = async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -96,10 +86,9 @@ const toggleUserBlock = async (req, res, next) => {
       return errorResponse(res, 'Administrators cannot be blocked', 400);
     }
 
-    // Toggle blocking status
+
     user.isBlocked = !user.isBlocked;
-    
-    // Invalidate refresh token if blocked
+   
     if (user.isBlocked) {
       user.refreshToken = null;
     }
@@ -116,9 +105,7 @@ const toggleUserBlock = async (req, res, next) => {
   }
 };
 
-/**
- * Delete a user and cascade delete their resources
- */
+
 const deleteUser = async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -132,8 +119,7 @@ const deleteUser = async (req, res, next) => {
       return errorResponse(res, 'Administrators cannot be deleted', 400);
     }
 
-    await user.destroy(); // Cascade deletes are set up on Sequelize association definitions
-
+    await user.destroy(); 
     return successResponse(res, 'User and associated data deleted successfully', { userId: id });
   } catch (error) {
     next(error);
